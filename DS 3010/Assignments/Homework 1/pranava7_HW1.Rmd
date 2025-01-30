@@ -1,0 +1,239 @@
+---
+title: "Homework #1 - DS 3010 (Spring 2025)"
+author: "Pranava Sai Maganti"
+student_net_id: "pranava7"
+student_email: "pranava7@iastate.edu"
+date: "1/28/2025"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(dplyr)
+library(ggplot2)
+library(knitr)
+```
+
+### Problem 1 - R review
+```{r}
+# Load the dataset, ensuring '?' is treated as NA
+data <- read.table("Auto.data", header = TRUE, na.strings = "?")
+str(data)
+sapply(data, is.factor)
+data2 <- read.table("Auto.data", header = TRUE)
+
+print(names(data))
+
+# (a) Number of rows and columns
+num_observations <- nrow(data)
+num_variables <- ncol(data)
+cat("Number of observations:", num_observations, "\nNumber of variables:", num_variables, "\n")
+
+# (b) Remove observations with missing values
+data_clean <- na.omit(data)
+num_observations_clean <- nrow(data_clean)
+num_variables_clean <- ncol(data_clean)
+cat("After removing missing values - Rows:", num_observations_clean, "Columns:", num_variables_clean, "\nDeleted", num_observations-num_observations_clean, " ? from the dataset\n")
+
+data_clean2 <- na.omit(data2)
+num_observations_clean2 <- nrow(data_clean2)
+num_variables_clean2 <- ncol(data_clean2)
+cat("After removing missing values - Rows:", num_observations_clean2, "Columns:", num_variables_clean2, "\nDeleted", num_observations-num_observations_clean2, "from the dataset\n")
+
+# (c) Identify factor variables
+str(data_clean)
+sapply(data_clean, is.factor)
+cat("Columns stored as factors: None. So, let's make some columns as factors\n")
+data_clean$cylinders <- as.factor(data_clean$cylinders)
+data_clean$origin <- as.factor(data_clean$origin)
+data_clean$year <- as.factor(data_clean$year)
+factor_vars <- names(data_clean)[sapply(data_clean, is.factor)]
+cat("Columns stored as factors:", paste(factor_vars, collapse = ", "), "\n")
+
+
+# (d) Should 'name' be a factor? Justification
+cat("The 'name' variable should not be a factor because it represents unique car model names rather than a categorical variable for analysis.\n")
+
+# (e) Print first 10 observations
+cat("First 10 observations:\n")
+print(head(data_clean, 10))
+cat("First 10 observations represented as a table for better formatting below: ")
+kable(head(data_clean, 10), align = "c")
+
+# (f) Extract observations 10, 14, and 29
+cat("Observations 10, 14, and 29:\n")
+print(data_clean[c(10, 14, 29), ])
+cat("Observations 10, 14, and 29 represented as a table for better formatting below: ")
+kable(head(data_clean[c(10,14,29),], 3), align = "c")
+
+# (g) Extract displacement and horsepower for observations 10, 14, and 29
+# Ensure columns exist before subsetting
+if(all(c("displacement", "horsepower") %in% names(data_clean))) {
+  cat("Displacement and Horsepower for observations 10, 14, and 29:\n")
+  print(data_clean[c(10, 14, 29), c("displacement", "horsepower")])
+  cat("Variables displacement and horsepower extracted from Observations 10, 14, and 29 represented as a table for better formatting below: ")
+  kable(head(data_clean[c(10,14,29),c("displacement", "horsepower")], 3), align = "c")
+} else {
+  cat("Error: Columns 'displacement' and 'horsepower' not found!\n")
+}
+
+# (h) Compute average mpg for observations with horsepower < 200
+if("horsepower" %in% names(data_clean)) {
+  avg_mpg <- mean(as.numeric(data_clean$mpg[as.numeric(data_clean$horsepower) < 200]), na.rm = TRUE)
+  cat("Average MPG for cars with horsepower < 200:", avg_mpg, "\n")
+} else {
+  cat("Error: Column 'horsepower' not found!\n")
+}
+
+# (i) Scatter plot of mpg vs horsepower
+if("horsepower" %in% names(data_clean)) {
+  ggplot(data_clean, aes(x = as.numeric(horsepower), y = mpg)) +
+    geom_point() +
+    labs(title = "MPG vs Horsepower", x = "Horsepower", y = "MPG")
+} else {
+  cat("Error: Column 'horsepower' not found for plotting!\n")
+}
+
+# (j) Boxplot of acceleration across years
+if(all(c("year", "acceleration") %in% names(data_clean))) {
+  ggplot(data_clean, aes(x = as.factor(year), y = acceleration, fill = as.factor(year))) +
+    geom_boxplot() +
+    labs(title = "Acceleration Across Years", x = "Year", y = "Acceleration") +
+    theme_minimal() +
+    scale_fill_brewer(palette = "Set3")
+} else {
+  cat("Error: Required columns for boxplot not found!\n")
+}
+
+# (k) Explanation of vectorization
+cat("Vectorization in R refers to the process of applying operations to entire vectors or datasets without the need for explicit loops. For instance, instead of iterating through each element to compute the square of a number, R can apply the operation to the entire vector simultaneously. This approach makes the code more efficient and easier to read.\n")
+```
+
+### Problem 2 - Multiple linear regression
+```{r}
+if (!require(ISLR2)) install.packages("ISLR2", dependencies = TRUE)
+library(ISLR2)
+
+# Convert to dataframe if needed
+Boston <- as.data.frame(Boston)
+
+head(Boston)
+
+# (a) Number of rows and columns
+num_rows <- nrow(Boston)
+num_cols <- ncol(Boston)
+cat("Number of rows:", num_rows, "\nNumber of columns:", num_cols, "\n")
+
+# (b) What does the variable 'lstat' represent?
+cat("The variable 'lstat' represents the percentage of lower status population in a suburb.\n")
+
+# (c) Average per capita crime rate
+avg_crime_rate <- mean(Boston$crim)
+cat("Average per capita crime rate:", avg_crime_rate, "\n")
+
+# (d) Average crime rate near Charles River (chas = 1) and away from it (chas = 0)
+avg_crime_near_river <- mean(Boston$crim[Boston$chas == 1])
+avg_crime_away_river <- mean(Boston$crim[Boston$chas == 0])
+cat("Average crime rate near Charles River:", avg_crime_near_river, "\n")
+cat("Average crime rate away from Charles River:", avg_crime_away_river, "\n")
+
+# (e) Identify high crime rate suburbs (define 'high' as above 3rd quartile)
+high_crime_rates <- quantile(Boston$crim, 0.9)  # 90th percentile
+high_crime_suburbs <- Boston$crim > high_crime_rates
+num_high_crime_suburbs <- sum(high_crime_suburbs)
+cat("Number of high crime rate suburbs:", num_high_crime_suburbs, "\n")
+
+high_crime_rates2 <- quantile(Boston$crim, 0.75)  # 75th percentile
+high_crime_suburbs2 <- Boston$crim > high_crime_rates2
+num_high_crime_suburbs2 <- sum(high_crime_suburbs2)
+cat("Number of high crime rate suburbs:", num_high_crime_suburbs2, "\n")
+summary(Boston$crim)
+
+# (f) Exploratory Data Analysis (correlation with crime rate)
+correlations <- cor(Boston[, -1], Boston$crim, use = "complete.obs")
+print(correlations)
+significant_predictors <- names(correlations[abs(correlations) > 0.3])
+
+# Print results in a formatted way
+if (length(significant_predictors) > 0) {
+  cat("Predictors significantly associated with crime rate:\n", 
+      paste(significant_predictors, collapse=", "), "\n")
+} else {
+  cat("No predictors found with correlation > 0.3 or < -0.3 with crime rate.\n")
+}
+
+# (g) Simple linear regression: Predicting crim using lstat
+lm_lstat <- lm(crim ~ lstat, data = Boston)
+summary(lm_lstat)
+cat("Estimated coefficients for lstat model:\n")
+print(coef(lm_lstat))
+
+# (h) Simple linear regression for each predictor
+simple_reg_results <- data.frame(Predictor = names(Boston)[-1], Coefficient = NA, PValue = NA)
+
+for (predictor in names(Boston)[-1]) {  # Exclude 'crim'
+  model <- lm(crim ~ get(predictor), data = Boston)
+  simple_reg_results[simple_reg_results$Predictor == predictor, "Coefficient"] <- coef(model)[2]
+  simple_reg_results[simple_reg_results$Predictor == predictor, "PValue"] <- summary(model)$coefficients[2, 4]
+}
+
+# Print table of simple regression results
+library(knitr)
+cat("Simple linear regression results for each predictor:\n")
+kable(simple_reg_results, digits = 4)
+
+# (i) Multiple linear regression using all predictors
+lm_full <- lm(crim ~ ., data = Boston)
+summary(lm_full)
+
+# Organize results into a table
+multi_reg_results <- data.frame(Predictor = names(coef(lm_full))[-1], Coefficient = coef(lm_full)[-1])
+cat("Multiple regression results:\n")
+kable(multi_reg_results, digits = 4)
+
+# (j) Compare simple regression vs multiple regression coefficients
+comparison <- merge(simple_reg_results, multi_reg_results, by = "Predictor", suffixes = c("_simple", "_multi"))
+ggplot(comparison, aes(x = Coefficient_simple, y = Coefficient_multi, label = Predictor)) +
+  geom_point(color = "blue") +
+  geom_text(vjust = 1.5, hjust = 0.5) +
+  labs(title = "Comparison of Simple vs Multiple Regression Coefficients", x = "Simple Regression Coefficients", y = "Multiple Regression Coefficients") +
+  theme_minimal()
+
+# (k) Explanation of multiple regression benefits
+cat("Multiple regression models consider several variables at once, capturing interactions and dependencies that models with a single predictor cannot account for. This approach reduces omitted variable bias and enhances prediction accuracy.\n")
+```
+
+### Problem 3 - Interpreting Multiple Linear Regression Models
+```{r}
+# Given regression coefficients
+beta_0 <- 50
+beta_1 <- 20
+beta_2 <- 0.07
+beta_3 <- 35
+
+# (a) Interpretation of the Level (Education) coefficient
+if (beta_3 > 0) {
+  cat("Correct answer: (ii) For a fixed value of IQ and GPA, college graduates earn more, on average, than high school graduates.\n")
+} else {
+  cat("Incorrect interpretation! Check model coefficients again.\n")
+}
+
+# (b) Predict salary for a college graduate with IQ = 110 and GPA = 4.0
+IQ <- 110
+GPA <- 4.0
+Level <- 1
+
+# Calculate predicted salary
+predicted_salary <- beta_0 + (beta_1 * GPA) + (beta_2 * IQ) + (beta_3 * Level)
+cat("Predicted salary for a college graduate with IQ 110 and GPA 4.0:", predicted_salary, "thousands of dollars\n")
+
+# (c) Assess the impact of IQ on salary
+if (abs(beta_2) < 1) {
+  cat("False: Even though the coefficient of IQ is small (", beta_2, "), it still contributes to salary prediction.\nSmall coefficient values do not mean the predictor is unimportant; the unit scale of the predictor matters.\n")
+} else {
+  cat("True: The coefficient of IQ is very small, so its effect on salary is minimal.\n")
+}
+```
